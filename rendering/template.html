@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>My first three.js app</title>
+        <style>
+            body {
+                margin: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.js"></script>
+        <script type="module">
+            import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
+            var data = JSON.parse(`{{solution}}`);
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+
+            scene.background = new THREE.Color(0xf0f0f0);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+            const light = new THREE.DirectionalLight(0xffffff, 0.7);
+            light.position.set(1, 1, 0.5).normalize();
+            scene.add(light);
+
+            const renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Add controls
+            const controls = new OrbitControls(camera, renderer.domElement);
+
+            // Create rainbow color for each container
+            const colors = [];
+            for (let i = 0; i < data.containers.length; i++) {
+                colors.push(
+                    new THREE.Color(
+                        `hsl(${(i * 360) / data.containers.length}, 100%, 50%)`
+                    )
+                );
+            }
+
+            // Create group visual for each container
+            const containers = [];
+            for (let i = 0; i < data.containers.length; i++) {
+                const container = new THREE.Group();
+                container.name = `Container ${i}`;
+                data.containers[i].items.forEach((element) => {
+                    const item = data.items[element];
+                    const geometry = new THREE.BoxGeometry(
+                        item.dim.l,
+                        item.dim.w,
+                        item.dim.h
+                    );
+                    const material = new THREE.MeshPhongMaterial({
+                        color: colors[i],
+                    });
+                    const cube = new THREE.Mesh(geometry, material);
+                    cube.position.set(
+                        data.positions[element].x,
+                        data.positions[element].y,
+                        data.positions[element].z
+                    );
+                    container.add(cube);
+                });
+                containers.push(container);
+                scene.add(container);
+            }
+
+            camera.position.z = 5;
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // containers.forEach(packing => {
+                //     packing.rotation.x += 0.01;
+                //     packing.rotation.y += 0.01;
+                // });
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+        </script>
+    </body>
+</html>
