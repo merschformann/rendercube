@@ -12,7 +12,7 @@ var template string
 
 func Convert(input Input, outputFile string) error {
 	// Downsize lengths
-	factor := 1000.0
+	factor := 1.0
 	for i := range input.Containers {
 		input.Containers[i].Length /= factor
 		input.Containers[i].Width /= factor

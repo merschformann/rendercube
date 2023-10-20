@@ -88,7 +88,7 @@
                         });
                         const cubeVisual = new THREE.Mesh(geometry, material);
                         cubeVisual.position.set(
-                            piece.position.x + cube.x + cube.length / 2,
+                            containerOffset + piece.position.x + cube.x + cube.length / 2,
                             piece.position.y + cube.y + cube.width / 2,
                             piece.position.z + cube.z + cube.height / 2
                         );
