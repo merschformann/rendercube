@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
     <head>
         <meta charset="utf-8" />
@@ -10,9 +10,20 @@
         </style>
     </head>
     <body>
+        <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.min.js"></script> -->
         <script src="https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.js"></script>
+
         <script type="module">
             import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
+            import { EffectComposer } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/EffectComposer.js";
+            import { GlitchPass } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/GlitchPass.js";
+            import { RenderPass } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/RenderPass.js";
+            // import { OutputPass } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/OutputPass.js";
+
+            // import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.min.js';
+
+            console.log(THREE);
+
             var data = JSON.parse(`{{solution}}`);
             const scene = new THREE.Scene();
             const camera = new THREE.PerspectiveCamera(
@@ -23,6 +34,7 @@
             );
 
             scene.background = new THREE.Color(0xf0f0f0);
+            scene.background = new THREE.Color(0x000000);
             scene.add(new THREE.AmbientLight(0xffffff, 0.3));
             const light = new THREE.DirectionalLight(0xffffff, 0.7);
             light.position.set(1, 1, 0.5).normalize();
@@ -30,49 +42,101 @@
 
             const renderer = new THREE.WebGLRenderer();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.antialias = true;
             document.body.appendChild(renderer.domElement);
 
             // Add controls
             const controls = new OrbitControls(camera, renderer.domElement);
 
-            // Create rainbow color for each container
+            // Count pieces in all containers
+            let pieceCount = 0;
+            data.containers.forEach((container) => {
+                pieceCount += container.assignments.length;
+            });
+
+            // Create rainbow color for each piece
             const colors = [];
-            for (let i = 0; i < data.containers.length; i++) {
+            for (let i = 0; i < pieceCount; i++) {
                 colors.push(
-                    new THREE.Color(
-                        `hsl(${(i * 360) / data.containers.length}, 100%, 50%)`
-                    )
+                    new THREE.Color(`hsl(${(i * 360) / pieceCount}, 100%, 50%)`)
                 );
             }
 
-            // Create group visual for each container
+            // Create visuals for all elements
             const containers = [];
-            for (let i = 0; i < data.containers.length; i++) {
-                const container = new THREE.Group();
-                container.name = `Container ${i}`;
-                data.containers[i].items.forEach((element) => {
-                    const item = data.items[element];
-                    const geometry = new THREE.BoxGeometry(
-                        item.dim.l,
-                        item.dim.w,
-                        item.dim.h
-                    );
-                    const material = new THREE.MeshPhongMaterial({
-                        color: colors[i],
+            pieceCount = 0;
+            let containerOffset = 0;
+            data.containers.forEach((container) => {
+                // Create visual for container content
+                const contentVisual = new THREE.Group();
+                contentVisual.name = `Container ${container.id}`;
+                for (let i = 0; i < container.assignments.length; i++) {
+                    const piece = container.assignments[i];
+                    console.log(piece);
+                    const pieceVisual = new THREE.Group();
+                    pieceVisual.name = `Piece ${piece.id}`;
+                    piece.cubes.forEach((cube) => {
+                        console.log(cube);
+                        const cubeGroup = new THREE.Group();
+                        const geometry = new THREE.BoxGeometry(
+                            cube.length,
+                            cube.width,
+                            cube.height
+                        );
+                        const material = new THREE.MeshPhongMaterial({
+                            color: colors[pieceCount],
+                        });
+                        const cubeVisual = new THREE.Mesh(geometry, material);
+                        cubeVisual.position.set(
+                            piece.position.x + cube.x + cube.length / 2,
+                            piece.position.y + cube.y + cube.width / 2,
+                            piece.position.z + cube.z + cube.height / 2
+                        );
+                        pieceVisual.add(cubeVisual);
+                        pieceCount++;
                     });
-                    const cube = new THREE.Mesh(geometry, material);
-                    cube.position.set(
-                        data.positions[element].x,
-                        data.positions[element].y,
-                        data.positions[element].z
-                    );
-                    container.add(cube);
+                    // pieceVisual.position.set(
+                    //     piece.position.x + ,
+                    //     piece.position.y,
+                    //     piece.position.z
+                    // );
+                    contentVisual.add(pieceVisual);
+                }
+                containers.push(contentVisual);
+                scene.add(contentVisual);
+                // Create visual for container itself
+                const containerVisual = new THREE.Group();
+                console.log(container.length, container.width, container.height);
+                const geometry = new THREE.BoxGeometry(
+                    container.length,
+                    container.width,
+                    container.height
+                );
+                const material = new THREE.MeshPhongMaterial({
+                    color: new THREE.Color(`hsl(0, 0%, 100%)`),
                 });
-                containers.push(container);
-                scene.add(container);
-            }
+                material.wireframe = true;
+                const containerMesh = new THREE.Mesh(geometry, material);
+                containerVisual.add(containerMesh);
+                containerVisual.position.set(
+                    containerOffset + container.length / 2,
+                    0 + container.width / 2,
+                    0 + container.height / 2
+                );
+                scene.add(containerVisual);
+                // Move to next container
+                containerOffset += container.length + 0.5;
+            });
 
             camera.position.z = 5;
+
+            const composer = new EffectComposer(renderer);
+            const renderPass = new RenderPass( scene, camera );
+            composer.addPass( renderPass );
+            // const glitchPass = new GlitchPass();
+            // composer.addPass( glitchPass );
+            // const outputPass = new OutputPass();
+            // composer.addPass( outputPass );
 
             function animate() {
                 requestAnimationFrame(animate);
@@ -82,7 +146,8 @@
                 //     packing.rotation.y += 0.01;
                 // });
 
-                renderer.render(scene, camera);
+                // renderer.render(scene, camera);
+                composer.render();
             }
 
             animate();

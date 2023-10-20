@@ -1,14 +1,16 @@
 package rendering
 
-type Input struct {
-}
+import (
+	"encoding/json"
+	"os"
+)
 
-type Instance struct {
+type Input struct {
 	Containers []Container `json:"containers"`
 }
 
 type Container struct {
-	ID          string       `json:"id"`
+	ID          int          `json:"id"`
 	Assignments []Assignment `json:"assignments"`
 	Length      float64      `json:"length"`
 	Width       float64      `json:"width"`
@@ -16,8 +18,18 @@ type Container struct {
 }
 
 type Assignment struct {
-	Piece string `json:"piece"`
-	Cubes []Cube `json:"cubes"`
+	Piece    int      `json:"piece"`
+	Position Position `json:"position"`
+	Cubes    []Cube   `json:"cubes"`
+}
+
+type Position struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
+	A float64 `json:"a"`
+	B float64 `json:"b"`
+	C float64 `json:"c"`
 }
 
 type Cube struct {
@@ -27,4 +39,17 @@ type Cube struct {
 	Length float64 `json:"length"`
 	Width  float64 `json:"width"`
 	Height float64 `json:"height"`
+}
+
+func ReadInput(file string) (Input, error) {
+	content, err := os.ReadFile(file)
+	if err != nil {
+		return Input{}, err
+	}
+	var input Input
+	err = json.Unmarshal(content, &input)
+	if err != nil {
+		return Input{}, err
+	}
+	return input, nil
 }
