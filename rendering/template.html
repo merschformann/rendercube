@@ -10,9 +10,23 @@
             canvas {
                 display: block; /* fix necessary to remove space at bottom of canvas */
             }
+            .ui {
+                position: absolute;
+                margin: 20px;
+            }
+            button {
+                margin: 2px;
+            }
         </style>
     </head>
     <body>
+        <div style="right: 0" id="health" class="ui">
+            <p style="width: 100%; text-align: center; color: white">
+                Pieces: {{pieces}}, Containers: {{containers}}
+            </p>
+            <button name="button-color-mode">Color mode</button>
+        </div>
+
         <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.min.js"></script> -->
         <script src="https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.js"></script>
 
@@ -100,6 +114,9 @@
                     new THREE.Color(`hsl(${(i * 360) / pieceCount}, 100%, 50%)`)
                 );
             }
+            // Create random colors copy
+            const randomColors = colors.slice();
+            randomColors.sort(() => Math.random() - 0.5);
 
             // Create visuals for all elements
             const containers = [];
@@ -179,6 +196,38 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             }
             window.addEventListener("resize", onWindowResize, false);
+
+            // Add color mode toggle button
+            var buttons = document.getElementsByName("button-color-mode");
+            for (let i = 0; i < buttons.length; i++) {
+                buttons[i].addEventListener("click", onColorModeToggle, false);
+            }
+            function onColorModeToggle(event) {
+                const button = event.target;
+                if (button.innerHTML == "Sorted colors") {
+                    button.innerHTML = "Random colors";
+                    let p = 0;
+                    containers.forEach((container) => {
+                        container.children.forEach((piece) => {
+                            piece.children.forEach((cube) => {
+                                cube.material.color = randomColors[p];
+                            });
+                            p++;
+                        });
+                    });
+                } else {
+                    button.innerHTML = "Sorted colors";
+                    let p = 0;
+                    containers.forEach((container) => {
+                        container.children.forEach((piece) => {
+                            piece.children.forEach((cube) => {
+                                cube.material.color = colors[p];
+                            });
+                            p++;
+                        });
+                    });
+                }
+            }
 
             const composer = new EffectComposer(renderer);
             const renderPass = new RenderPass(scene, camera);

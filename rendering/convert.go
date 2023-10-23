@@ -3,6 +3,7 @@ package rendering
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 )
@@ -11,6 +12,13 @@ import (
 var template string
 
 func Convert(input Input, outputFile string) error {
+	// Collect some information about the solution
+	pieces, containers := 0, 0
+	for i := range input.Containers {
+		containers++
+		pieces += len(input.Containers[i].Assignments)
+	}
+
 	// Downsize lengths
 	factor := 1.0
 	for i := range input.Containers {
@@ -38,6 +46,8 @@ func Convert(input Input, outputFile string) error {
 		return err
 	}
 	output := strings.Replace(template, "{{solution}}", string(marshalled), 1)
+	output = strings.Replace(output, "{{pieces}}", fmt.Sprintf("%d", pieces), 1)
+	output = strings.Replace(output, "{{containers}}", fmt.Sprintf("%d", containers), 1)
 	err = os.WriteFile(outputFile, []byte(output), 0644)
 	if err != nil {
 		return err
