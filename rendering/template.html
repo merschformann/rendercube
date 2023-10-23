@@ -22,7 +22,43 @@
 
             // import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.min.js';
 
-            console.log(THREE);
+            function zoomCameraToSelection(
+                camera,
+                controls,
+                selection,
+                fitOffset = 1.2
+            ) {
+                const box = new THREE.Box3();
+
+                for (const object of selection) box.expandByObject(object);
+
+                const size = box.getSize(new THREE.Vector3());
+                const center = box.getCenter(new THREE.Vector3());
+
+                const maxSize = Math.max(size.x, size.y, size.z);
+                const fitHeightDistance =
+                    maxSize / (2 * Math.atan((Math.PI * camera.fov) / 360));
+                const fitWidthDistance = fitHeightDistance / camera.aspect;
+                const distance =
+                    fitOffset * Math.max(fitHeightDistance, fitWidthDistance);
+
+                const direction = controls.target
+                    .clone()
+                    .sub(camera.position)
+                    .normalize()
+                    .multiplyScalar(distance);
+
+                controls.maxDistance = distance * 10;
+                controls.target.copy(center);
+
+                camera.near = distance / 100;
+                camera.far = distance * 100;
+                camera.updateProjectionMatrix();
+
+                camera.position.copy(controls.target).sub(direction);
+
+                controls.update();
+            }
 
             var data = JSON.parse(`{{solution}}`);
             const scene = new THREE.Scene();
@@ -72,11 +108,9 @@
                 contentVisual.name = `Container ${container.id}`;
                 for (let i = 0; i < container.assignments.length; i++) {
                     const piece = container.assignments[i];
-                    console.log(piece);
                     const pieceVisual = new THREE.Group();
                     pieceVisual.name = `Piece ${piece.id}`;
                     piece.cubes.forEach((cube) => {
-                        console.log(cube);
                         const cubeGroup = new THREE.Group();
                         const geometry = new THREE.BoxGeometry(
                             cube.length,
@@ -88,7 +122,10 @@
                         });
                         const cubeVisual = new THREE.Mesh(geometry, material);
                         cubeVisual.position.set(
-                            containerOffset + piece.position.x + cube.x + cube.length / 2,
+                            containerOffset +
+                                piece.position.x +
+                                cube.x +
+                                cube.length / 2,
                             piece.position.y + cube.y + cube.width / 2,
                             piece.position.z + cube.z + cube.height / 2
                         );
@@ -106,7 +143,6 @@
                 scene.add(contentVisual);
                 // Create visual for container itself
                 const containerVisual = new THREE.Group();
-                console.log(container.length, container.width, container.height);
                 const geometry = new THREE.BoxGeometry(
                     container.length,
                     container.width,
@@ -130,9 +166,20 @@
 
             camera.position.z = 5;
 
+            // Update camera to fit all containers
+            zoomCameraToSelection(camera, controls, containers, 0.5);
+
+            // Update canvas when window is resized
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            window.addEventListener("resize", onWindowResize, false);
+
             const composer = new EffectComposer(renderer);
-            const renderPass = new RenderPass( scene, camera );
-            composer.addPass( renderPass );
+            const renderPass = new RenderPass(scene, camera);
+            composer.addPass(renderPass);
             // const glitchPass = new GlitchPass();
             // composer.addPass( glitchPass );
             // const outputPass = new OutputPass();
