@@ -4,14 +4,13 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 )
 
 //go:embed template.html
 var template string
 
-func Convert(input Input, outputFile string) error {
+func Convert(input Input) (string, error) {
 	// Collect some information about the solution
 	pieces, containers := 0, 0
 	for i := range input.Containers {
@@ -40,17 +39,13 @@ func Convert(input Input, outputFile string) error {
 		}
 	}
 
-	// Output
+	// Write output
 	marshalled, err := json.Marshal(input)
 	if err != nil {
-		return err
+		return "", err
 	}
 	output := strings.Replace(template, "{{solution}}", string(marshalled), 1)
 	output = strings.Replace(output, "{{pieces}}", fmt.Sprintf("%d", pieces), 1)
 	output = strings.Replace(output, "{{containers}}", fmt.Sprintf("%d", containers), 1)
-	err = os.WriteFile(outputFile, []byte(output), 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	return output, nil
 }

@@ -1,10 +1,5 @@
 package rendering
 
-import (
-	"encoding/json"
-	"os"
-)
-
 type Input struct {
 	Containers []Container `json:"containers"`
 }
@@ -39,17 +34,4 @@ type Cube struct {
 	Length float64 `json:"length"`
 	Width  float64 `json:"width"`
 	Height float64 `json:"height"`
-}
-
-func ReadInput(file string) (Input, error) {
-	content, err := os.ReadFile(file)
-	if err != nil {
-		return Input{}, err
-	}
-	var input Input
-	err = json.Unmarshal(content, &input)
-	if err != nil {
-		return Input{}, err
-	}
-	return input, nil
 }
