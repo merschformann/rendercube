@@ -15,3 +15,9 @@ go install github.com/merschformann/rendercube
 ```bash
 rendercube -input <input.json> -output <output.html>
 ```
+
+## Example
+
+Find an example solution rendered in the screenshot below:
+
+![Example](material/preview.png)
