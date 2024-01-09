@@ -7,7 +7,7 @@ Renders [SardineCan](https://github.com/merschformann/sardine-can) solutions sto
 ## Installation
 
 ```bash
-go install github.com/merschformann/rendercube
+go install github.com/merschformann/rendercube@latest
 ```
 
 ## Usage
