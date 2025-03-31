@@ -139,8 +139,8 @@
                         const cubeGroup = new THREE.Group();
                         const geometry = new THREE.BoxGeometry(
                             cube.length,
+                            cube.height,
                             cube.width,
-                            cube.height
                         );
                         const material = new THREE.MeshPhongMaterial({
                             color: colors[pieceCount],
@@ -151,8 +151,8 @@
                                 piece.position.x +
                                 cube.x +
                                 cube.length / 2,
+                            piece.position.z + cube.z + cube.height / 2,
                             piece.position.y + cube.y + cube.width / 2,
-                            piece.position.z + cube.z + cube.height / 2
                         );
                         pieceVisual.add(cubeVisual);
                         pieceCount++;
@@ -165,8 +165,8 @@
                 const containerVisual = new THREE.Group();
                 const geometry = new THREE.BoxGeometry(
                     container.length,
+                    container.height,
                     container.width,
-                    container.height
                 );
                 const material = new THREE.MeshPhongMaterial({
                     color: new THREE.Color(`hsl(0, 0%, 100%)`),
@@ -176,8 +176,8 @@
                 containerVisual.add(containerMesh);
                 containerVisual.position.set(
                     containerOffset + container.length / 2,
+                    0 + container.height / 2,
                     0 + container.width / 2,
-                    0 + container.height / 2
                 );
                 scene.add(containerVisual);
                 // Move to next container
