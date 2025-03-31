@@ -235,6 +235,7 @@
             const selectColorMode = document.querySelector(
                 "select[name=select-color-mode]"
             );
+            selectColorMode.value = "sorted";
             selectColorMode.addEventListener("change", (event) => {
                 const value = event.target.value;
                 let p = 0;
