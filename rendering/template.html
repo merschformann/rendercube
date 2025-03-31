@@ -24,7 +24,11 @@
             <p style="width: 100%; text-align: center; color: white">
                 Pieces: {{pieces}}, Offload: {{offload}}, Containers: {{containers}}
             </p>
-            <button name="button-color-mode">Color mode</button>
+            <select name="select-color-mode">
+                <option value="sorted">Sorted colors</option>
+                <option value="index">Indexed colors</option>
+                <option value="random">Random colors</option>
+            </select>
         </div>
 
         <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.min.js"></script> -->
@@ -79,6 +83,15 @@
                 controls.update();
             }
 
+            // shuffleArray shuffles the given array.
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
             // Parse data (will be injected)
             var data = JSON.parse(`{{solution}}`);
 
@@ -108,8 +121,16 @@
 
             // Count pieces in all containers
             let pieceCount = 0;
+            let pieceIdxByCount = {};
             data.containers.forEach((container) => {
-                pieceCount += container.assignments.length;
+                container.assignments.forEach((piece) => {
+                    pieceIdxByCount[pieceCount] = piece.piece;
+                    pieceCount++;
+                });
+            });
+            data.offload.forEach((pieceId) => {
+                pieceIdxByCount[pieceCount] = pieceId;
+                pieceCount++;
             });
 
             // Create rainbow color for each piece
@@ -121,7 +142,20 @@
             }
             // Create random colors copy
             const randomColors = colors.slice();
-            randomColors.sort(() => Math.random() - 0.5);
+            shuffleArray(randomColors);
+            // Create another rainbow based on the index of the pieces (all seen in container assignments and offload)
+            const maxIndex = Math.max(
+                ...Object.values(pieceIdxByCount).map((pieceId) => {
+                    return pieceId;
+                })
+            );
+            console.log(maxIndex);
+            const indexColors = [];
+            for (let i = 0; i < maxIndex; i++) {
+                indexColors.push(
+                    new THREE.Color(`hsl(${(i * 360) / maxIndex}, 100%, 50%)`)
+                );
+            }
 
             // Create visuals for all elements
             const containers = [];
@@ -197,38 +231,29 @@
             }
             window.addEventListener("resize", onWindowResize, false);
 
-            // Add color mode toggle button
-            var buttons = document.getElementsByName("button-color-mode");
-            for (let i = 0; i < buttons.length; i++) {
-                buttons[i].addEventListener("click", onColorModeToggle, false);
-            }
-            function onColorModeToggle(event) {
-                const button = event.target;
-                if (button.innerHTML == "Sorted colors") {
-                    button.innerHTML = "Random colors";
-                    let p = 0;
-                    containers.forEach((container) => {
-                        container.children.forEach((piece) => {
-                            piece.children.forEach((cube) => {
-                                cube.material.color = randomColors[p];
-                            });
+            // Add event listeners
+            const selectColorMode = document.querySelector(
+                "select[name=select-color-mode]"
+            );
+            selectColorMode.addEventListener("change", (event) => {
+                const value = event.target.value;
+                let p = 0;
+                containers.forEach((packing) => {
+                    packing.children.forEach((piece) => {
+                        piece.children.forEach((cube) => {
+                            const material = cube.material;
+                            if (value === "sorted") {
+                                material.color = colors[p];
+                            } else if (value === "random") {
+                                material.color = randomColors[p];
+                            } else if (value === "index") {
+                                material.color = indexColors[pieceIdxByCount[p]];
+                            }
                             p++;
                         });
                     });
-                } else {
-                    button.innerHTML = "Sorted colors";
-                    let p = 0;
-                    containers.forEach((container) => {
-                        container.children.forEach((piece) => {
-                            piece.children.forEach((cube) => {
-                                cube.material.color = colors[p];
-                            });
-                            p++;
-                        });
-                    });
-                }
-            }
-            onColorModeToggle({ target: buttons[0] });
+                });
+            });
 
             const composer = new EffectComposer(renderer);
             const renderPass = new RenderPass(scene, camera);
