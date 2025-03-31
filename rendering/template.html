@@ -156,6 +156,13 @@
                     new THREE.Color(`hsl(${(i * 360) / maxIndex}, 100%, 50%)`)
                 );
             }
+            // Extract custom color maps
+            const customColorTypes = [];
+            Object.keys(data.data.color_maps).forEach((colorType) => {
+                if (colorType !== "sorted" && colorType !== "random" && colorType !== "index") {
+                    customColorTypes.push(colorType);
+                }
+            });
 
             // Create visuals for all elements
             const containers = [];
@@ -236,6 +243,13 @@
                 "select[name=select-color-mode]"
             );
             selectColorMode.value = "sorted";
+            // Add custom color maps
+            customColorTypes.forEach((colorType) => {
+                const option = document.createElement("option");
+                option.value = colorType;
+                option.innerText = colorType;
+                selectColorMode.appendChild(option);
+            });
             selectColorMode.addEventListener("change", (event) => {
                 const value = event.target.value;
                 let p = 0;
@@ -249,6 +263,16 @@
                                 material.color = randomColors[p];
                             } else if (value === "index") {
                                 material.color = indexColors[pieceIdxByCount[p]];
+                            } else {
+                                const colorMap = data.data.color_maps[value];
+                                if (colorMap) {
+                                    const color = colorMap[pieceIdxByCount[p]];
+                                    material.color = new THREE.Color(color);
+                                } else {
+                                    console.warn(
+                                        `Color map ${value} not found in data.`
+                                    );
+                                }
                             }
                             p++;
                         });

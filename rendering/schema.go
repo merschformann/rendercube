@@ -3,6 +3,7 @@ package rendering
 type Input struct {
 	Containers []Container `json:"containers"`
 	Offload    []int       `json:"offload"`
+	Data       any         `json:"data"`
 }
 
 type Container struct {
