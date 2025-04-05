@@ -158,11 +158,13 @@
             }
             // Extract custom color maps
             const customColorTypes = [];
-            Object.keys(data.data.color_maps).forEach((colorType) => {
-                if (colorType !== "sorted" && colorType !== "random" && colorType !== "index") {
-                    customColorTypes.push(colorType);
-                }
-            });
+            if (data?.data?.color_maps) {
+                Object.keys(data.data.color_maps).forEach((colorType) => {
+                    if (colorType !== "sorted" && colorType !== "random" && colorType !== "index") {
+                        customColorTypes.push(colorType);
+                    }
+                });
+            }
 
             // Create visuals for all elements
             const containers = [];
