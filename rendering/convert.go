@@ -42,6 +42,21 @@ func Convert(input Input) (string, error) {
 		return usedI/capacityI > usedJ/capacityJ
 	})
 
+	// Sort pieces inside each container by position (z, y, x)
+	for i := range input.Containers {
+		sort.Slice(input.Containers[i].Assignments, func(a, b int) bool {
+			posA := input.Containers[i].Assignments[a].Position
+			posB := input.Containers[i].Assignments[b].Position
+			if posA.Z != posB.Z {
+				return posA.Z < posB.Z
+			}
+			if posA.Y != posB.Y {
+				return posA.Y < posB.Y
+			}
+			return posA.X < posB.X
+		})
+	}
+
 	// Write output
 	marshalled, err := json.Marshal(input)
 	if err != nil {
