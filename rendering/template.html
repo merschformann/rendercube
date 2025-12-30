@@ -128,8 +128,8 @@
                     pieceCount++;
                 });
             });
-            data.offload.forEach((pieceId) => {
-                pieceIdxByCount[pieceCount] = pieceId;
+            data.offload.forEach((piece) => {
+                pieceIdxByCount[pieceCount] = piece.piece;
                 pieceCount++;
             });
 
@@ -166,7 +166,7 @@
                 });
             }
 
-            // Create visuals for all elements
+            // Create visuals for containers and their content
             const containers = [];
             pieceCount = 0;
             let containerOffset = 0;
@@ -226,6 +226,39 @@
                 // Move to next container
                 containerOffset += container.length + 0.5;
             });
+
+            // Create visuals for offloaded pieces
+            const offloadVisual = new THREE.Group();
+            offloadVisual.name = "Offloaded pieces";
+            let offloadOffset = containerOffset + 1.0;
+            data.offload.forEach((piece) => {
+                const pieceVisual = new THREE.Group();
+                pieceVisual.name = `Piece ${piece.id}`;
+                let maxPieceLength = 0;
+                piece.cubes.forEach((cube) => {
+                    const cubeGroup = new THREE.Group();
+                    const geometry = new THREE.BoxGeometry(
+                        cube.length,
+                        cube.height,
+                        cube.width,
+                    );
+                    const material = new THREE.MeshPhongMaterial({
+                        color: colors[pieceCount],
+                    });
+                    const cubeVisual = new THREE.Mesh(geometry, material);
+                    cubeVisual.position.set(
+                        offloadOffset + cube.x + cube.length / 2,
+                        cube.z + cube.height / 2,
+                        cube.y + cube.width / 2,
+                    );
+                    pieceVisual.add(cubeVisual);
+                    pieceCount++;
+                    maxPieceLength = Math.max(maxPieceLength, cube.length);
+                });
+                offloadVisual.add(pieceVisual);
+                offloadOffset += maxPieceLength * 1.1;
+            });
+            scene.add(offloadVisual);
 
             camera.position.z = 5;
 
