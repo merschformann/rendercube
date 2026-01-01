@@ -1,9 +1,9 @@
 package rendering
 
 type Input struct {
-	Containers []Container `json:"containers"`
-	Offload    []int       `json:"offload"`
-	Data       any         `json:"data"`
+	Containers []Container    `json:"containers"`
+	Offload    []OffloadPiece `json:"offload"`
+	Data       any            `json:"data"`
 }
 
 type Container struct {
@@ -18,6 +18,11 @@ type Assignment struct {
 	Piece    int      `json:"piece"`
 	Position Position `json:"position"`
 	Cubes    []Cube   `json:"cubes"`
+}
+
+type OffloadPiece struct {
+	Piece int    `json:"piece"`
+	Cubes []Cube `json:"cubes"`
 }
 
 type Position struct {
