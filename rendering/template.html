@@ -1,341 +1,379 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <title>rendercube export</title>
-        <style>
-            body {
-                margin: 0;
-            }
-            canvas {
-                display: block; /* fix necessary to remove space at bottom of canvas */
-            }
-            .ui {
-                position: absolute;
-                margin: 20px;
-            }
-            button {
-                margin: 2px;
-            }
-        </style>
-    </head>
-    <body>
-        <div style="right: 0" id="health" class="ui">
-            <p style="width: 100%; text-align: center; color: white">
-                Pieces: {{pieces}}, Offload: {{offload}}, Containers: {{containers}}
-            </p>
-            <select name="select-color-mode">
-                <option value="sorted">Sorted colors</option>
-                <option value="index">Indexed colors</option>
-                <option value="random">Random colors</option>
-            </select>
-        </div>
+  <head>
+    <meta charset="utf-8" />
+    <title>rendercube export</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      canvas {
+        display: block; /* fix necessary to remove space at bottom of canvas */
+      }
+      .ui {
+        position: absolute;
+        margin: 20px;
+      }
+      button {
+        margin: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="right: 0" id="health" class="ui">
+      <p style="width: 100%; text-align: center; color: white">
+        Pieces: {{pieces}}, Offload: {{offload}}, Containers: {{containers}}
+      </p>
+      <select name="select-color-mode">
+        <option value="sorted">Sorted colors</option>
+        <option value="index">Indexed colors</option>
+        <option value="random">Random colors</option>
+      </select>
+      <button id="reset-view-button">Reset View</button>
+    </div>
 
-        <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.min.js"></script> -->
-        <script src="https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.js"></script>
 
-        <script type="module">
-            import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
-            import { EffectComposer } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/EffectComposer.js";
-            import { GlitchPass } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/GlitchPass.js";
-            import { RenderPass } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/RenderPass.js";
-            // import { OutputPass } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/OutputPass.js";
+    <script type="module">
+      import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/controls/OrbitControls.js";
+      import { EffectComposer } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/EffectComposer.js";
+      import { GlitchPass } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/GlitchPass.js";
+      import { RenderPass } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/RenderPass.js";
+      // import { OutputPass } from "https://cdn.jsdelivr.net/npm/three@0.121.1/examples/jsm/postprocessing/OutputPass.js";
 
-            // import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.min.js';
+      // import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.121.1/build/three.min.js';
 
-            // zoomCameraToSelection zooms the camera to fit the selection.
-            // This needs to be improved as it doesn't work for small objects.
-            function zoomCameraToSelection(
-                camera,
-                controls,
-                selection,
-                fitOffset = 1.2
-            ) {
-                const box = new THREE.Box3();
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
 
-                for (const object of selection) box.expandByObject(object);
+      // zoomCameraToSelection zooms the camera to fit the selection.
+      // This needs to be improved as it doesn't work for small objects.
+      function zoomCameraToSelection(
+        camera,
+        controls,
+        selection,
+        fitOffset = 1.2
+      ) {
+        const box = new THREE.Box3();
 
-                const size = box.getSize(new THREE.Vector3());
-                const center = box.getCenter(new THREE.Vector3());
+        for (const object of selection) box.expandByObject(object);
 
-                const maxSize = Math.max(size.x, size.y, size.z);
-                const fitHeightDistance =
-                    maxSize / (2 * Math.atan((Math.PI * camera.fov) / 360));
-                const fitWidthDistance = fitHeightDistance / camera.aspect;
-                const distance =
-                    fitOffset * Math.max(fitHeightDistance, fitWidthDistance);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
 
-                const direction = controls.target
-                    .clone()
-                    .sub(camera.position)
-                    .normalize()
-                    .multiplyScalar(distance);
+        const maxSize = Math.max(size.x, size.y, size.z);
+        const fitHeightDistance =
+          maxSize / (2 * Math.atan((Math.PI * camera.fov) / 360));
+        const fitWidthDistance = fitHeightDistance / camera.aspect;
+        const distance =
+          fitOffset * Math.max(fitHeightDistance, fitWidthDistance);
 
-                controls.maxDistance = distance * 10;
-                controls.target.copy(center);
+        const direction = controls.target
+          .clone()
+          .sub(camera.position)
+          .normalize()
+          .multiplyScalar(distance);
 
-                camera.near = distance / 100;
-                camera.far = distance * 100;
-                camera.updateProjectionMatrix();
+        controls.maxDistance = distance * 10;
+        controls.target.copy(center);
 
-                camera.position.copy(controls.target).sub(direction);
+        camera.near = distance / 100;
+        camera.far = distance * 100;
+        camera.updateProjectionMatrix();
 
-                controls.update();
-            }
+        camera.position.copy(controls.target).sub(direction);
 
-            // shuffleArray shuffles the given array.
-            function shuffleArray(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-                return array;
-            }
+        controls.update();
+      }
 
-            // Parse data (will be injected)
-            var data = JSON.parse(`{{solution}}`);
+      function focusOnObject(object) {
+        // Get the world position of the object
+        const box = new THREE.Box3().setFromObject(object);
+        const center = box.getCenter(new THREE.Vector3());
 
-            // Create essentials
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(
-                75,
-                window.innerWidth / window.innerHeight,
-                0.1,
-                1000
+        // Calculate a new camera position (e.g., offset from the object)
+        const offset = new THREE.Vector3(0, 0, 5);
+        offset.applyQuaternion(camera.quaternion);
+        const newPosition = center.clone().add(offset);
+
+        // Set the camera position
+        camera.position.copy(newPosition);
+        controls.target.copy(center);
+      }
+
+      window.addEventListener("dblclick", (event) => {
+        // Calculate mouse position in normalized device coordinates
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        // Update the raycaster
+        raycaster.setFromCamera(mouse, camera);
+
+        // Check for intersections with objects
+        const intersects = raycaster.intersectObjects(scene.children, true);
+
+        if (intersects.length > 0) {
+          const object = intersects[0].object;
+          focusOnObject(object);
+        }
+      });
+
+      // shuffleArray shuffles the given array.
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      // Parse data (will be injected)
+      var data = JSON.parse(`{{solution}}`);
+
+      // Create essentials
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+
+      scene.background = new THREE.Color(0xf0f0f0);
+      scene.background = new THREE.Color(0x000000);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+      const light = new THREE.DirectionalLight(0xffffff, 0.7);
+      light.position.set(1, 1, 0.5).normalize();
+      scene.add(light);
+
+      const renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.antialias = true;
+      document.body.appendChild(renderer.domElement);
+
+      // Add controls
+      const controls = new OrbitControls(camera, renderer.domElement);
+
+      // Count pieces in all containers
+      let pieceCount = 0;
+      let pieceIdxByCount = {};
+      data.containers.forEach((container) => {
+        container.assignments.forEach((piece) => {
+          pieceIdxByCount[pieceCount] = piece.piece;
+          pieceCount++;
+        });
+      });
+      data.offload.forEach((piece) => {
+        pieceIdxByCount[pieceCount] = piece.piece;
+        pieceCount++;
+      });
+
+      // Create rainbow color for each piece
+      const colors = [];
+      for (let i = 0; i < pieceCount; i++) {
+        colors.push(
+          new THREE.Color(`hsl(${(i * 360) / pieceCount}, 100%, 50%)`)
+        );
+      }
+      // Create random colors copy
+      const randomColors = colors.slice();
+      shuffleArray(randomColors);
+      // Create another rainbow based on the index of the pieces (all seen in container assignments and offload)
+      const maxIndex = Math.max(
+        ...Object.values(pieceIdxByCount).map((pieceId) => {
+          return pieceId;
+        })
+      );
+      console.log(maxIndex);
+      const indexColors = [];
+      for (let i = 0; i < maxIndex; i++) {
+        indexColors.push(
+          new THREE.Color(`hsl(${(i * 360) / maxIndex}, 100%, 50%)`)
+        );
+      }
+      // Extract custom color maps
+      const customColorTypes = [];
+      if (data?.data?.color_maps) {
+        Object.keys(data.data.color_maps).forEach((colorType) => {
+          if (
+            colorType !== "sorted" &&
+            colorType !== "random" &&
+            colorType !== "index"
+          ) {
+            customColorTypes.push(colorType);
+          }
+        });
+      }
+
+      // Create visuals for containers and their content
+      const containers = [];
+      pieceCount = 0;
+      let containerOffset = 0;
+      data.containers.forEach((container) => {
+        // Create visual for container content
+        const contentVisual = new THREE.Group();
+        contentVisual.name = `Container ${container.id}`;
+        for (let i = 0; i < container.assignments.length; i++) {
+          const piece = container.assignments[i];
+          const pieceVisual = new THREE.Group();
+          pieceVisual.name = `Piece ${piece.id}`;
+          piece.cubes.forEach((cube) => {
+            const cubeGroup = new THREE.Group();
+            const geometry = new THREE.BoxGeometry(
+              cube.length,
+              cube.height,
+              cube.width
             );
-
-            scene.background = new THREE.Color(0xf0f0f0);
-            scene.background = new THREE.Color(0x000000);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-            const light = new THREE.DirectionalLight(0xffffff, 0.7);
-            light.position.set(1, 1, 0.5).normalize();
-            scene.add(light);
-
-            const renderer = new THREE.WebGLRenderer();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.antialias = true;
-            document.body.appendChild(renderer.domElement);
-
-            // Add controls
-            const controls = new OrbitControls(camera, renderer.domElement);
-
-            // Count pieces in all containers
-            let pieceCount = 0;
-            let pieceIdxByCount = {};
-            data.containers.forEach((container) => {
-                container.assignments.forEach((piece) => {
-                    pieceIdxByCount[pieceCount] = piece.piece;
-                    pieceCount++;
-                });
+            const material = new THREE.MeshPhongMaterial({
+              color: colors[pieceCount],
             });
-            data.offload.forEach((piece) => {
-                pieceIdxByCount[pieceCount] = piece.piece;
-                pieceCount++;
-            });
-
-            // Create rainbow color for each piece
-            const colors = [];
-            for (let i = 0; i < pieceCount; i++) {
-                colors.push(
-                    new THREE.Color(`hsl(${(i * 360) / pieceCount}, 100%, 50%)`)
-                );
-            }
-            // Create random colors copy
-            const randomColors = colors.slice();
-            shuffleArray(randomColors);
-            // Create another rainbow based on the index of the pieces (all seen in container assignments and offload)
-            const maxIndex = Math.max(
-                ...Object.values(pieceIdxByCount).map((pieceId) => {
-                    return pieceId;
-                })
+            const cubeVisual = new THREE.Mesh(geometry, material);
+            cubeVisual.position.set(
+              containerOffset + piece.position.x + cube.x + cube.length / 2,
+              piece.position.z + cube.z + cube.height / 2,
+              piece.position.y + cube.y + cube.width / 2
             );
-            console.log(maxIndex);
-            const indexColors = [];
-            for (let i = 0; i < maxIndex; i++) {
-                indexColors.push(
-                    new THREE.Color(`hsl(${(i * 360) / maxIndex}, 100%, 50%)`)
-                );
-            }
-            // Extract custom color maps
-            const customColorTypes = [];
-            if (data?.data?.color_maps) {
-                Object.keys(data.data.color_maps).forEach((colorType) => {
-                    if (colorType !== "sorted" && colorType !== "random" && colorType !== "index") {
-                        customColorTypes.push(colorType);
-                    }
-                });
-            }
+            pieceVisual.add(cubeVisual);
+            pieceCount++;
+          });
+          contentVisual.add(pieceVisual);
+        }
+        containers.push(contentVisual);
+        scene.add(contentVisual);
+        // Create visual for container itself
+        const containerVisual = new THREE.Group();
+        const geometry = new THREE.BoxGeometry(
+          container.length,
+          container.height,
+          container.width
+        );
+        const material = new THREE.MeshPhongMaterial({
+          color: new THREE.Color(`hsl(0, 0%, 100%)`),
+        });
+        material.wireframe = true;
+        const containerMesh = new THREE.Mesh(geometry, material);
+        containerVisual.add(containerMesh);
+        containerVisual.position.set(
+          containerOffset + container.length / 2,
+          0 + container.height / 2,
+          0 + container.width / 2
+        );
+        scene.add(containerVisual);
+        // Move to next container
+        containerOffset += container.length + 0.5;
+      });
 
-            // Create visuals for containers and their content
-            const containers = [];
-            pieceCount = 0;
-            let containerOffset = 0;
-            data.containers.forEach((container) => {
-                // Create visual for container content
-                const contentVisual = new THREE.Group();
-                contentVisual.name = `Container ${container.id}`;
-                for (let i = 0; i < container.assignments.length; i++) {
-                    const piece = container.assignments[i];
-                    const pieceVisual = new THREE.Group();
-                    pieceVisual.name = `Piece ${piece.id}`;
-                    piece.cubes.forEach((cube) => {
-                        const cubeGroup = new THREE.Group();
-                        const geometry = new THREE.BoxGeometry(
-                            cube.length,
-                            cube.height,
-                            cube.width,
-                        );
-                        const material = new THREE.MeshPhongMaterial({
-                            color: colors[pieceCount],
-                        });
-                        const cubeVisual = new THREE.Mesh(geometry, material);
-                        cubeVisual.position.set(
-                            containerOffset +
-                                piece.position.x +
-                                cube.x +
-                                cube.length / 2,
-                            piece.position.z + cube.z + cube.height / 2,
-                            piece.position.y + cube.y + cube.width / 2,
-                        );
-                        pieceVisual.add(cubeVisual);
-                        pieceCount++;
-                    });
-                    contentVisual.add(pieceVisual);
-                }
-                containers.push(contentVisual);
-                scene.add(contentVisual);
-                // Create visual for container itself
-                const containerVisual = new THREE.Group();
-                const geometry = new THREE.BoxGeometry(
-                    container.length,
-                    container.height,
-                    container.width,
-                );
-                const material = new THREE.MeshPhongMaterial({
-                    color: new THREE.Color(`hsl(0, 0%, 100%)`),
-                });
-                material.wireframe = true;
-                const containerMesh = new THREE.Mesh(geometry, material);
-                containerVisual.add(containerMesh);
-                containerVisual.position.set(
-                    containerOffset + container.length / 2,
-                    0 + container.height / 2,
-                    0 + container.width / 2,
-                );
-                scene.add(containerVisual);
-                // Move to next container
-                containerOffset += container.length + 0.5;
+      // Create visuals for offloaded pieces
+      const offloadVisual = new THREE.Group();
+      offloadVisual.name = "Offloaded pieces";
+      let offloadOffset = containerOffset + 1.0;
+      data.offload.forEach((piece) => {
+        const pieceVisual = new THREE.Group();
+        pieceVisual.name = `Piece ${piece.id}`;
+        let maxPieceLength = 0;
+        piece.cubes.forEach((cube) => {
+          const cubeGroup = new THREE.Group();
+          const geometry = new THREE.BoxGeometry(
+            cube.length,
+            cube.height,
+            cube.width
+          );
+          const material = new THREE.MeshPhongMaterial({
+            color: colors[pieceCount],
+          });
+          const cubeVisual = new THREE.Mesh(geometry, material);
+          cubeVisual.position.set(
+            offloadOffset + cube.x + cube.length / 2,
+            cube.z + cube.height / 2,
+            cube.y + cube.width / 2
+          );
+          pieceVisual.add(cubeVisual);
+          pieceCount++;
+          maxPieceLength = Math.max(maxPieceLength, cube.length);
+        });
+        offloadVisual.add(pieceVisual);
+        offloadOffset += maxPieceLength * 1.1;
+      });
+      scene.add(offloadVisual);
+
+      camera.position.z = 5;
+
+      // Update camera to fit all containers
+      zoomCameraToSelection(camera, controls, containers, 0.5);
+
+      // Update canvas when window is resized
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+      window.addEventListener("resize", onWindowResize, false);
+
+      // Add event listeners
+      const selectColorMode = document.querySelector(
+        "select[name=select-color-mode]"
+      );
+      selectColorMode.value = "sorted";
+      // Add custom color maps
+      customColorTypes.forEach((colorType) => {
+        const option = document.createElement("option");
+        option.value = colorType;
+        option.innerText = colorType;
+        selectColorMode.appendChild(option);
+      });
+      selectColorMode.addEventListener("change", (event) => {
+        const value = event.target.value;
+        let allChildren = [];
+        containers.forEach((packing) => {
+          packing.children.forEach((piece) => {
+            piece.children.forEach((cube) => {
+              allChildren.push(cube);
             });
+          });
+        });
+        offloadVisual.children.forEach((piece) => {
+          piece.children.forEach((cube) => {
+            allChildren.push(cube);
+          });
+        });
 
-            // Create visuals for offloaded pieces
-            const offloadVisual = new THREE.Group();
-            offloadVisual.name = "Offloaded pieces";
-            let offloadOffset = containerOffset + 1.0;
-            data.offload.forEach((piece) => {
-                const pieceVisual = new THREE.Group();
-                pieceVisual.name = `Piece ${piece.id}`;
-                let maxPieceLength = 0;
-                piece.cubes.forEach((cube) => {
-                    const cubeGroup = new THREE.Group();
-                    const geometry = new THREE.BoxGeometry(
-                        cube.length,
-                        cube.height,
-                        cube.width,
-                    );
-                    const material = new THREE.MeshPhongMaterial({
-                        color: colors[pieceCount],
-                    });
-                    const cubeVisual = new THREE.Mesh(geometry, material);
-                    cubeVisual.position.set(
-                        offloadOffset + cube.x + cube.length / 2,
-                        cube.z + cube.height / 2,
-                        cube.y + cube.width / 2,
-                    );
-                    pieceVisual.add(cubeVisual);
-                    pieceCount++;
-                    maxPieceLength = Math.max(maxPieceLength, cube.length);
-                });
-                offloadVisual.add(pieceVisual);
-                offloadOffset += maxPieceLength * 1.1;
-            });
-            scene.add(offloadVisual);
-
-            camera.position.z = 5;
-
-            // Update camera to fit all containers
-            zoomCameraToSelection(camera, controls, containers, 0.5);
-
-            // Update canvas when window is resized
-            function onWindowResize() {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+        let p = 0;
+        allChildren.forEach((cube) => {
+          const material = cube.material;
+          if (value === "sorted") {
+            material.color = colors[p];
+          } else if (value === "random") {
+            material.color = randomColors[p];
+          } else if (value === "index") {
+            material.color = indexColors[pieceIdxByCount[p]];
+          } else {
+            const colorMap = data.data.color_maps[value];
+            if (colorMap) {
+              const color = colorMap[pieceIdxByCount[p]];
+              material.color = new THREE.Color(color);
+            } else {
+              console.warn(`Color map ${value} not found in data.`);
             }
-            window.addEventListener("resize", onWindowResize, false);
+          }
+          p++;
+        });
+      });
+      const resetViewButton = document.getElementById("reset-view-button");
+      resetViewButton.addEventListener("click", () => {
+        zoomCameraToSelection(camera, controls, containers, 0.5);
+      });
 
-            // Add event listeners
-            const selectColorMode = document.querySelector(
-                "select[name=select-color-mode]"
-            );
-            selectColorMode.value = "sorted";
-            // Add custom color maps
-            customColorTypes.forEach((colorType) => {
-                const option = document.createElement("option");
-                option.value = colorType;
-                option.innerText = colorType;
-                selectColorMode.appendChild(option);
-            });
-            selectColorMode.addEventListener("change", (event) => {
-                const value = event.target.value;
-                let p = 0;
-                containers.forEach((packing) => {
-                    packing.children.forEach((piece) => {
-                        piece.children.forEach((cube) => {
-                            const material = cube.material;
-                            if (value === "sorted") {
-                                material.color = colors[p];
-                            } else if (value === "random") {
-                                material.color = randomColors[p];
-                            } else if (value === "index") {
-                                material.color = indexColors[pieceIdxByCount[p]];
-                            } else {
-                                const colorMap = data.data.color_maps[value];
-                                if (colorMap) {
-                                    const color = colorMap[pieceIdxByCount[p]];
-                                    material.color = new THREE.Color(color);
-                                } else {
-                                    console.warn(
-                                        `Color map ${value} not found in data.`
-                                    );
-                                }
-                            }
-                            p++;
-                        });
-                    });
-                });
-            });
+      const composer = new EffectComposer(renderer);
+      const renderPass = new RenderPass(scene, camera);
+      composer.addPass(renderPass);
 
-            const composer = new EffectComposer(renderer);
-            const renderPass = new RenderPass(scene, camera);
-            composer.addPass(renderPass);
-            // const glitchPass = new GlitchPass();
-            // composer.addPass( glitchPass );
-            // const outputPass = new OutputPass();
-            // composer.addPass( outputPass );
+      function animate() {
+        requestAnimationFrame(animate);
+        composer.render();
+      }
 
-            function animate() {
-                requestAnimationFrame(animate);
-
-                // containers.forEach(packing => {
-                //     packing.rotation.x += 0.01;
-                //     packing.rotation.y += 0.01;
-                // });
-
-                // renderer.render(scene, camera);
-                composer.render();
-            }
-
-            animate();
-        </script>
-    </body>
+      animate();
+    </script>
+  </body>
 </html>
